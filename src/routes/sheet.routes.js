@@ -1,10 +1,13 @@
-import { Router } from "express";
-import { createSheet, getSheets } from "../controllers/sheet.controller.js";
+import express from "express";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { getSheets } from "../controllers/sheet.controller.js";
+import { getResumeProblem } from "../controllers/sheet.controller.js";
 
-const router = Router();
 
-router.post("/", authMiddleware, createSheet);
-router.get("/", getSheets);
+const router = express.Router();
+
+router.get("/sheets", authMiddleware, getSheets);
+router.get("/resume", authMiddleware, getResumeProblem);
+
 
 export default router;

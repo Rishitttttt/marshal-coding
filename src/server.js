@@ -3,26 +3,43 @@ import http from "http";
 import { Server } from "socket.io";
 import app from "./app.js";
 import prisma from "./config/db.js";
-import { verifyAccessToken } from "./utils/verifyAccessToken.js";
+import { verifyAccessToken } from "./config/jwt.js";
 
 const PORT = process.env.PORT || 5000;
 
-/* -------------------- HTTP SERVER -------------------- */
+/* ================= CREATE HTTP SERVER ================= */
 const httpServer = http.createServer(app);
 
-/* -------------------- SOCKET.IO -------------------- */
+/* ================= SOCKET.IO ================= */
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL, // production frontend URL
+];
+
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   },
 });
 
-/* -------------------- SOCKET AUTH -------------------- */
+/* ================= SOCKET AUTH ================= */
+
 io.use((socket, next) => {
   const token =
     socket.handshake.auth?.token ||
     socket.handshake.headers?.authorization?.split(" ")[1];
+
+  if (!token) {
+    return next(new Error("Unauthorized"));
+  }
 
   const decoded = verifyAccessToken(token);
 
@@ -30,15 +47,16 @@ io.use((socket, next) => {
     return next(new Error("Unauthorized"));
   }
 
-  socket.user = decoded; // { userId, ... }
+  socket.user = decoded; // { userId }
   next();
 });
 
-/* -------------------- PRESENCE STORE (V1) -------------------- */
-// Map<problemId, Set<userId>>
+/* ================= PRESENCE STORE ================= */
+
 const problemPresence = new Map();
 
-/* -------------------- SOCKET EVENTS -------------------- */
+/* ================= SOCKET EVENTS ================= */
+
 io.on("connection", (socket) => {
   const userId = socket.user.userId;
   console.log("🟢 Connected:", userId);
@@ -46,7 +64,6 @@ io.on("connection", (socket) => {
   /* JOIN PROBLEM */
   socket.on("join_problem", ({ problemId }) => {
     const roomName = `problem:${problemId}`;
-
     socket.join(roomName);
 
     if (!problemPresence.has(problemId)) {
@@ -59,8 +76,6 @@ io.on("connection", (socket) => {
       problemId,
       users: Array.from(problemPresence.get(problemId)),
     });
-
-    console.log(`🟢 User ${userId} joined ${roomName}`);
   });
 
   /* LEAVE PROBLEM */
@@ -72,17 +87,22 @@ io.on("connection", (socket) => {
     if (usersSet) {
       usersSet.delete(userId);
 
+      io.to(roomName).emit("presence_update", {
+        problemId,
+        users: Array.from(usersSet),
+      });
+
       if (usersSet.size === 0) {
         problemPresence.delete(problemId);
       }
     }
+  });
 
-    io.to(roomName).emit("presence_update", {
-      problemId,
-      users: usersSet ? Array.from(usersSet) : [],
+  /* TYPING */
+  socket.on("typing", ({ problemId }) => {
+    socket.to(`problem:${problemId}`).emit("user_typing", {
+      userId,
     });
-
-    console.log(`🟡 User ${userId} left ${roomName}`);
   });
 
   /* SEND MESSAGE */
@@ -95,6 +115,14 @@ io.on("connection", (socket) => {
           content,
           problemId,
           userId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
         },
       });
 
@@ -110,9 +138,7 @@ io.on("connection", (socket) => {
       if (usersSet.has(userId)) {
         usersSet.delete(userId);
 
-        const roomName = `problem:${problemId}`;
-
-        io.to(roomName).emit("presence_update", {
+        io.to(`problem:${problemId}`).emit("presence_update", {
           problemId,
           users: Array.from(usersSet),
         });
@@ -127,7 +153,8 @@ io.on("connection", (socket) => {
   });
 });
 
-/* -------------------- START SERVER -------------------- */
+/* ================= START SERVER ================= */
+
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

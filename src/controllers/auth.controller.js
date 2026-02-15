@@ -85,15 +85,23 @@ export const login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    // 🔥 THIS IS THE IMPORTANT PART
     res.json({
       message: "Login successful",
       accessToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      },
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 export const refresh = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
