@@ -3,6 +3,15 @@ const normalizeOrigin = (value) => {
   return value.replace(/\/$/, "");
 };
 
+const isVercelOrigin = (origin) => {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+};
+
 export const getAllowedOrigins = () => {
   const configuredOrigins = [
     "http://localhost:5173",
@@ -23,5 +32,8 @@ export const isAllowedOrigin = (origin) => {
     return true;
   }
 
-  return getAllowedOrigins().includes(normalizedOrigin);
+  return (
+    getAllowedOrigins().includes(normalizedOrigin) ||
+    isVercelOrigin(normalizedOrigin)
+  );
 };
