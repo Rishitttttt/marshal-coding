@@ -1,5 +1,3 @@
-console.log("ACCESS SECRET USED:", process.env.JWT_ACCESS_SECRET);
-
 import jwt from "jsonwebtoken";
 
 export const generateAccessToken = (payload) => {

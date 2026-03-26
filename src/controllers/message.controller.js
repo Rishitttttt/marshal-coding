@@ -2,7 +2,7 @@ import prisma from "../config/db.js";
 
 export const getMessagesByProblem = async (req, res) => {
   const { problemId } = req.params;
-  const limit = parseInt(req.query.limit) || 20;
+  const limit = parseInt(req.query.limit, 10) || 20;
   const cursor = req.query.cursor;
 
   try {
@@ -38,11 +38,11 @@ export const getMessagesByProblem = async (req, res) => {
     }
 
     res.status(200).json({
-      messages,
+      messages: messages.reverse(),
       nextCursor,
     });
   } catch (err) {
-    console.error("❌ Fetch messages error:", err);
+    console.error("Fetch messages error:", err);
     res.status(500).json({ message: "Failed to fetch messages" });
   }
 };

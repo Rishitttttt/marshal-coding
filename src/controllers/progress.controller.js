@@ -5,10 +5,24 @@ export const markProblemSolved = async (req, res) => {
     const userId = req.user.userId;
     const { problemId } = req.body;
 
-    const record = await prisma.userProblem.create({
-      data: {
+    if (!problemId) {
+      return res.status(400).json({ message: "problemId is required" });
+    }
+
+    const record = await prisma.userProblem.upsert({
+      where: {
+        userId_problemId: {
+          userId,
+          problemId,
+        },
+      },
+      update: {
+        solved: true,
+      },
+      create: {
         userId,
         problemId,
+        solved: true,
       },
     });
 
@@ -24,12 +38,14 @@ export const unmarkProblemSolved = async (req, res) => {
     const userId = req.user.userId;
     const { problemId } = req.body;
 
-    await prisma.userProblem.delete({
+    if (!problemId) {
+      return res.status(400).json({ message: "problemId is required" });
+    }
+
+    await prisma.userProblem.deleteMany({
       where: {
-        userId_problemId: {
-          userId,
-          problemId,
-        },
+        userId,
+        problemId,
       },
     });
 
@@ -39,11 +55,16 @@ export const unmarkProblemSolved = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 export const saveProblemNotes = async (req, res) => {
   const userId = req.user.userId;
   const { problemId, notes } = req.body;
 
   try {
+    if (!problemId) {
+      return res.status(400).json({ message: "problemId is required" });
+    }
+
     const existing = await prisma.userProblem.findUnique({
       where: {
         userId_problemId: {
@@ -67,21 +88,20 @@ export const saveProblemNotes = async (req, res) => {
       });
 
       return res.json(updated);
-    } else {
-      const created = await prisma.userProblem.create({
-        data: {
-          userId,
-          problemId,
-          notes,
-          solved: false,
-        },
-      });
-
-      return res.json(created);
     }
+
+    const created = await prisma.userProblem.create({
+      data: {
+        userId,
+        problemId,
+        notes,
+        solved: false,
+      },
+    });
+
+    return res.json(created);
   } catch (error) {
     console.error("SAVE NOTES ERROR:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-

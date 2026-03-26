@@ -13,46 +13,40 @@ import progressRoutes from "./routes/progress.routes.js";
 
 const app = express();
 
-/* ================= SECURITY MIDDLEWARE ================= */
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+  process.env.CORS_ORIGIN,
+].filter(Boolean);
 
-// Security headers
+const corsOrigin = (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  callback(new Error("Not allowed by CORS"));
+};
+
 app.use(helmet());
 
-// Rate limiting (basic API protection)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // limit each IP
+  windowMs: 15 * 60 * 1000,
+  max: 300,
   message: "Too many requests, please try again later.",
 });
 
 app.use(limiter);
 
-/* ================= CORS ================= */
-
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.FRONTEND_URL, // production frontend
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: corsOrigin,
     credentials: true,
   })
 );
 
-/* ================= BODY PARSING ================= */
-
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
-
-/* ================= ROUTES ================= */
 
 app.use("/api/auth", authRoutes);
 app.use("/api", sheetRoutes);
@@ -61,19 +55,16 @@ app.use("/api", problemRoutes);
 app.use("/api", topicRoutes);
 app.use("/api/progress", progressRoutes);
 
-/* ================= HEALTH CHECK ================= */
-
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "OK" });
+  res.status(200).json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
+  });
 });
-
-/* ================= 404 HANDLER ================= */
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
-
-/* ================= GLOBAL ERROR HANDLER ================= */
 
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR:", err);

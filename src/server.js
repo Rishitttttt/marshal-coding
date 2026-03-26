@@ -6,31 +6,29 @@ import prisma from "./config/db.js";
 import { verifyAccessToken } from "./config/jwt.js";
 
 const PORT = process.env.PORT || 5000;
-
-/* ================= CREATE HTTP SERVER ================= */
-const httpServer = http.createServer(app);
-
-/* ================= SOCKET.IO ================= */
-
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL, // production frontend URL
-];
+  process.env.FRONTEND_URL,
+  process.env.CORS_ORIGIN,
+].filter(Boolean);
+
+const corsOrigin = (origin, callback) => {
+  if (!origin || allowedOrigins.includes(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  callback(new Error("Not allowed by CORS"));
+};
+
+const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: corsOrigin,
     credentials: true,
   },
 });
-
-/* ================= SOCKET AUTH ================= */
 
 io.use((socket, next) => {
   const token =
@@ -47,21 +45,16 @@ io.use((socket, next) => {
     return next(new Error("Unauthorized"));
   }
 
-  socket.user = decoded; // { userId }
+  socket.user = decoded;
   next();
 });
 
-/* ================= PRESENCE STORE ================= */
-
 const problemPresence = new Map();
-
-/* ================= SOCKET EVENTS ================= */
 
 io.on("connection", (socket) => {
   const userId = socket.user.userId;
-  console.log("🟢 Connected:", userId);
+  console.log("Connected:", userId);
 
-  /* JOIN PROBLEM */
   socket.on("join_problem", ({ problemId }) => {
     const roomName = `problem:${problemId}`;
     socket.join(roomName);
@@ -78,7 +71,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  /* LEAVE PROBLEM */
   socket.on("leave_problem", ({ problemId }) => {
     const roomName = `problem:${problemId}`;
     socket.leave(roomName);
@@ -98,14 +90,12 @@ io.on("connection", (socket) => {
     }
   });
 
-  /* TYPING */
   socket.on("typing", ({ problemId }) => {
     socket.to(`problem:${problemId}`).emit("user_typing", {
       userId,
     });
   });
 
-  /* SEND MESSAGE */
   socket.on("send_message", async ({ problemId, content }) => {
     const roomName = `problem:${problemId}`;
 
@@ -128,11 +118,10 @@ io.on("connection", (socket) => {
 
       io.to(roomName).emit("receive_message", message);
     } catch (err) {
-      console.error("❌ Message error:", err);
+      console.error("Message error:", err);
     }
   });
 
-  /* DISCONNECT */
   socket.on("disconnect", () => {
     for (const [problemId, usersSet] of problemPresence.entries()) {
       if (usersSet.has(userId)) {
@@ -149,12 +138,10 @@ io.on("connection", (socket) => {
       }
     }
 
-    console.log("🔴 Disconnected:", userId);
+    console.log("Disconnected:", userId);
   });
 });
 
-/* ================= START SERVER ================= */
-
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

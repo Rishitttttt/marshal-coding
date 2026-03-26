@@ -70,7 +70,6 @@ export const login = async (req, res) => {
     }
 
     const payload = { userId: user.id };
-
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
@@ -83,9 +82,9 @@ export const login = async (req, res) => {
       httpOnly: true,
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
     });
 
-    // 🔥 THIS IS THE IMPORTANT PART
     res.json({
       message: "Login successful",
       accessToken,
@@ -95,7 +94,6 @@ export const login = async (req, res) => {
         email: user.email,
       },
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -132,3 +130,26 @@ export const refresh = async (req, res) => {
   }
 };
 
+export const logout = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (refreshToken) {
+      await prisma.user.updateMany({
+        where: { refreshToken },
+        data: { refreshToken: null },
+      });
+    }
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("LOGOUT ERROR:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
