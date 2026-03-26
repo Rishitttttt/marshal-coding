@@ -10,17 +10,12 @@ import authRoutes from "./routes/auth.routes.js";
 import problemRoutes from "./routes/problem.routes.js";
 import topicRoutes from "./routes/topic.routes.js";
 import progressRoutes from "./routes/progress.routes.js";
+import { isAllowedOrigin } from "./utils/cors.js";
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.FRONTEND_URL,
-  process.env.CORS_ORIGIN,
-].filter(Boolean);
-
 const corsOrigin = (origin, callback) => {
-  if (!origin || allowedOrigins.includes(origin)) {
+  if (isAllowedOrigin(origin)) {
     callback(null, true);
     return;
   }

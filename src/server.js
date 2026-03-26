@@ -4,16 +4,12 @@ import { Server } from "socket.io";
 import app from "./app.js";
 import prisma from "./config/db.js";
 import { verifyAccessToken } from "./config/jwt.js";
+import { isAllowedOrigin } from "./utils/cors.js";
 
 const PORT = process.env.PORT || 5000;
-const allowedOrigins = [
-  "http://localhost:5173",
-  process.env.FRONTEND_URL,
-  process.env.CORS_ORIGIN,
-].filter(Boolean);
 
 const corsOrigin = (origin, callback) => {
-  if (!origin || allowedOrigins.includes(origin)) {
+  if (isAllowedOrigin(origin)) {
     callback(null, true);
     return;
   }
