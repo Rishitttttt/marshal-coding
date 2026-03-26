@@ -2,6 +2,12 @@
 
 Marcel Coding is a production-deployed full-stack DSA practice platform built around curated pattern-based problem sets and real-time discussion rooms. Users can move through structured topics, track solved problems, save notes, and join a live chat tied to a specific problem while solving it.
 
+## Live demo
+
+[Open Marcel Coding](https://marshal-coding-frontend.vercel.app)
+
+Create an account, pick a topic, open any problem, and start tracking progress and using the live discussion room.
+
 Live frontend: `https://marshal-coding-frontend.vercel.app`  
 Live backend: `https://marcel-coding-api.onrender.com`
 
