@@ -1,172 +1,116 @@
-# Marshal Coding – Real-Time Coding Discussion Backend
+# Marcel Coding
 
-Marshal Coding is a backend system for a **real-time collaborative coding discussion platform**.  
-The goal is to make coding practice **less isolating** by allowing users to discuss **specific problems in real time** while solving them.
+Marcel Coding is a full-stack DSA practice platform built around curated pattern-based problem sets and real-time discussion rooms. Instead of an endless problem list, the app organizes questions by topic, tracks per-user progress, and lets users discuss a specific problem live while solving it.
 
-This project is **not a LeetCode clone** — there is **no code execution, judging, or leaderboards**.  
-The core focus is **curated practice + scoped real-time discussions**.
+Live app: `https://marshal-coding-frontend.vercel.app`  
+Backend API: `https://marcel-coding-api.onrender.com`
 
----
+## Why this project stands out
 
-## 🚀 Why This Project?
+- Pattern-based learning flow instead of an unstructured question dump
+- Real-time Socket.IO discussion room for each problem
+- JWT access-token auth with refresh-token cookie flow
+- Per-user progress tracking and notes persistence
+- Production deployment across Vercel, Render, and Neon Postgres
 
-While solving coding problems on platforms like LeetCode or GFG, practice often becomes:
-- Isolated
-- Random (no structured progression)
-- Boring over time
+## Tech stack
 
-Marshal Coding addresses this by:
-- Providing **limited, curated sheets** (revision, beginner, pattern-based)
-- Attaching a **real-time discussion room to each problem**
-- Allowing users solving the *same problem* to interact instantly
+- Frontend: React, Vite, React Router, Axios, Tailwind CSS, Socket.IO Client
+- Backend: Node.js, Express, Prisma, Socket.IO, JWT, bcrypt
+- Database: PostgreSQL on Neon
+- Deployment: Vercel for frontend, Render for backend
 
----
+## Monorepo structure
 
-## 🧠 Core Concept
+```text
+.
+|-- src/                  # Express API, auth, sockets, controllers, routes
+|-- prisma/               # Prisma schema and migrations
+|-- frontend/             # React + Vite client
+|-- seed.js               # starter local data
+|-- import-instagram-patterns.js
+|-- render.yaml
+`-- DEPLOYMENT.md
+```
 
-- Problems are grouped into **Sheets** (e.g. Sliding Window, DSA Revision)
-- Every **Problem** has its own **real-time chat room**
-- Users join a problem → they join that problem’s room
-- Messages are:
-  - Delivered in real time using **Socket.IO**
-  - Persisted in **PostgreSQL** using **Prisma**
-
----
-
-## ✨ Features
+## Core features
 
 ### Authentication
-- User registration & login
-- JWT **Access Token** (short-lived)
-- JWT **Refresh Token** (long-lived)
-- Refresh tokens stored in DB
-- Refresh tokens sent via **HTTP-only cookies**
-- Secure logout by invalidating refresh token
 
-### Sheets & Problems
-- Curated sheets (not infinite lists)
-- Each problem belongs to exactly one sheet
-- Problems define the context for discussions
+- Register and login flow
+- JWT access token for API and socket auth
+- Refresh token stored in HTTP-only cookie
+- Logout support with refresh token invalidation
 
-### Real-Time Discussion (Core Feature)
+### Curated DSA sheets
+
+- One main pattern sheet with topics like Two Pointers, Sliding Window, Binary Search, Heap, Trees, and more
+- 160 imported problems organized into 14 topics
+- Per-topic and per-sheet progress tracking
+
+### Problem workspace
+
+- Open any problem to view notes and discussion
+- Save personal notes per problem
+- Mark problems solved and resume from the next unsolved problem
+
+### Real-time discussion
+
 - One Socket.IO room per problem
-- Users can:
-  - Join a problem room
-  - Send messages
-  - Receive messages instantly
-- Messages are saved to the database
+- Live message delivery
+- Online presence updates for problem rooms
 
-### Message History
-- REST API to fetch messages by problem
-- Supports pagination using cursor-based approach
+## Production setup
 
----
+### Frontend
 
-## 🏗️ High-Level System Design
+- Hosted on Vercel
+- Uses `VITE_BACKEND_URL` to target the deployed API
 
-Client
-|
-|-- REST (Auth, Sheets, Problems, Messages)
-|
-|-- Socket.IO (Join Problem, Send Message)
-|
-Server (Node.js + Express)
-|
-|-- Prisma ORM
-|-- PostgreSQL
-|
-Socket.IO Rooms (problemId based)
+### Backend
 
+- Hosted on Render
+- Uses Prisma with Neon PostgreSQL
+- Configured for production CORS and cross-site auth cookies
 
----
+## Local development
 
-## 🛠️ Tech Stack & Justification
+### Backend
 
-| Technology | Reason |
-|----------|--------|
-| Node.js | Event-driven, ideal for real-time systems |
-| Express.js | Simple, unopinionated REST API layer |
-| PostgreSQL | Strong relational consistency |
-| Prisma ORM | Type-safe DB access & schema management |
-| Socket.IO | Reliable real-time communication |
-| JWT | Stateless authentication |
-| bcrypt | Secure password hashing |
-
----
-
-## 🔐 Authentication Flow (Access + Refresh)
-
-1. User logs in
-2. Server issues:
-   - Access Token (returned in response)
-   - Refresh Token (stored in DB + HTTP-only cookie)
-3. Client uses Access Token for API requests
-4. When Access Token expires:
-   - Client calls refresh endpoint
-   - New Access Token is issued if Refresh Token is valid
-5. Logout invalidates Refresh Token in DB
-
----
-
-## 🔌 Real-Time Flow (Socket.IO)
-
-1. Client connects with Access Token
-2. User opens a problem
-3. Socket joins room: `problemId`
-4. Messages:
-   - Emitted to the room
-   - Persisted to database
-5. All connected users receive the message instantly
-
----
-
-## 🗄️ Database Models (Prisma)
-
-- **User**
-- **Sheet**
-- **Problem**
-- **Message**
-
-Relationships:
-- Sheet → Problems (1:N)
-- Problem → Messages (1:N)
-- User → Messages (1:N)
-
----
-
-## ⚙️ How to Run Locally
-
-### 1. Clone the repository
 ```bash
-git clone https://github.com/Rishitttttt/marshal-coding.git
-cd marshal-coding
-2. Install dependencies
 npm install
-3. Setup environment variables
-Create a .env file:
-
-DATABASE_URL=postgresql://username:password@localhost:5432/db_name
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-4. Run database migrations
+copy .env.example .env
 npx prisma migrate dev
-5. Start the server
+node seed.js
 npm run dev
-Server runs on:
+```
 
-http://localhost:5000
-🔮 Future Enhancements
-Redis-based presence tracking (online users per problem)
+### Frontend
 
-Horizontal scaling for Socket.IO
+```bash
+cd frontend
+npm install
+copy .env.example .env
+npm run dev
+```
 
-Minimal frontend (React) for real-time chat UI
+## Data import
 
-Role-based moderation in discussions
+The repository includes an importer for the Instagram-style DSA pattern list:
 
-📌 Note
-This project focuses on backend system design, real-time architecture, and clean data modeling rather than UI or competitive programming features.
+```bash
+node import-instagram-patterns.js
+```
 
-👤 Author
-Rishit
-Backend-focused project built for learning scalable systems and real-time communication.
+This loads the production-style pattern sheet into the current database using the configured `DATABASE_URL`.
+
+## Resume-ready project summary
+
+Built and deployed a full-stack DSA practice platform with JWT authentication, PostgreSQL/Prisma persistence, per-user progress tracking, notes, and real-time Socket.IO discussion rooms for individual problems. Deployed the frontend on Vercel, backend on Render, and database on Neon.
+
+## Improvement ideas
+
+- Add screenshots and a short demo GIF to this README
+- Add API tests for auth, progress, and problem flows
+- Add admin tooling for question import and content management
+- Add message pagination UI and richer room presence

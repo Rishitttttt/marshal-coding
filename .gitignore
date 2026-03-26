@@ -1,8 +1,10 @@
 # dependencies
 node_modules/
+frontend/node_modules/
 
 # environment variables
 .env
+frontend/.env
 
 # prisma local files
 prisma/dev.db
@@ -17,3 +19,6 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# frontend build output
+frontend/dist/

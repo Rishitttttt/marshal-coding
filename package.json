@@ -1,17 +1,27 @@
 {
-  "name": "backend",
+  "name": "marcel-coding",
   "version": "1.0.0",
-  "description": "",
+  "description": "Full-stack DSA practice platform with real-time discussion rooms",
   "main": "src/server.js",
+  "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:lint": "npm --prefix frontend run lint"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "dsa",
+    "socket.io",
+    "express",
+    "react",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "rishit",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@prisma/client": "^5.18.0",
     "bcrypt": "^6.0.0",
